@@ -1,0 +1,518 @@
+---
+id: docker-guide
+title: Docker Guide
+sidebar_label: Docker Guide
+description: Core Docker concepts, installation on Ubuntu, Windows, and macOS, and a practical command reference.
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+## Overview
+
+Docker is a platform for building, packaging, and running applications inside **containers**.  
+Containers are lightweight, portable environments that bundle your application code with all its dependencies.
+
+This guide covers:
+
+- **Core concepts**: images, containers, volumes, networks, registries.
+- **Installation**: Ubuntu, Windows, and macOS.
+- **Command reference**: common `docker` and `docker compose` commands.
+
+---
+
+## Core Concepts
+
+### Images
+
+- **Image**: A read-only template used to create containers.
+- Built from a `Dockerfile` or pulled from a registry like Docker Hub.
+
+Key points:
+
+- Images are **versioned** (tags like `node:20`, `nginx:latest`).
+- Images are **layered**, which improves caching and reduces disk usage.
+
+```bash
+# List local images
+docker images
+
+# Pull an image
+docker pull nginx:latest
+
+# Remove an image
+docker rmi nginx:latest
+```
+
+### Containers
+
+- **Container**: A running (or stopped) instance of an image.
+- Provides an isolated environment with its own filesystem, processes, and network namespace.
+
+```bash
+# Run a container (foreground)
+docker run -it ubuntu:22.04 bash
+
+# Run a container (detached, in background)
+docker run -d --name my-nginx -p 8080:80 nginx:latest
+
+# List running containers
+docker ps
+
+# List all containers (including stopped)
+docker ps -a
+
+# Stop and remove a container
+docker stop my-nginx
+docker rm my-nginx
+```
+
+### Volumes
+
+- **Volume**: A persistent data store managed by Docker.
+- Helps keep data even if containers are removed.
+
+```bash
+# List volumes
+docker volume ls
+
+# Create a volume
+docker volume create my-data
+
+# Use a volume in a container
+docker run -d --name db \
+  -v my-data:/var/lib/mysql \
+  mysql:8
+
+# Remove a volume
+docker volume rm my-data
+```
+
+### Networks
+
+- **Network**: A virtual network that connects containers.
+
+```bash
+# List networks
+docker network ls
+
+# Create a network
+docker network create my-net
+
+# Attach a container to a network
+docker run -d --name app --network my-net nginx
+
+# Inspect a network
+docker network inspect my-net
+```
+
+### Registries
+
+- **Registry**: A service that stores and distributes images.
+- Public example: Docker Hub. Private registries are common inside companies.
+
+```bash
+# Log in to a registry (Docker Hub by default)
+docker login
+
+# Tag an image
+docker tag my-image:latest my-username/my-image:1.0.0
+
+# Push an image
+docker push my-username/my-image:1.0.0
+```
+
+---
+
+## Installation
+
+<Tabs>
+  <TabItem value="ubuntu" label="Ubuntu">
+
+### Install on Ubuntu (Recommended: Docker Engine + Docker Compose plugin)
+
+1. **Uninstall old versions (optional but recommended)**
+
+```bash
+sudo apt-get remove docker docker-engine docker.io containerd runc
+```
+
+2. **Set up the Docker repository**
+
+```bash
+sudo apt-get update
+sudo apt-get install -y ca-certificates curl gnupg
+
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo \"$VERSION_CODENAME\") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+```
+
+3. **Install Docker Engine and Docker Compose plugin**
+
+```bash
+sudo apt-get update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+```
+
+4. **Verify installation**
+
+```bash
+sudo docker run hello-world
+```
+
+5. **Run Docker without `sudo` (optional)**
+
+```bash
+sudo groupadd docker 2>/dev/null || true
+sudo usermod -aG docker "$USER"
+newgrp docker
+
+docker run hello-world
+```
+
+  </TabItem>
+  <TabItem value="windows" label="Windows">
+
+### Install on Windows (Docker Desktop)
+
+**Requirements (simplified)**:
+
+- Windows 10/11 64-bit.
+- Hardware virtualization enabled in BIOS.
+- WSL 2 recommended for Linux-based containers.
+
+**Steps**:
+
+1. Download **Docker Desktop for Windows** from the official Docker website.
+2. Run the installer and follow the wizard.
+3. When prompted, enable **WSL 2** integration (recommended).
+4. After installation, restart your machine if required.
+5. Launch **Docker Desktop** and wait until it shows that Docker is running.
+
+**Verify installation (PowerShell or Command Prompt)**:
+
+```bash
+docker --version
+docker run hello-world
+```
+
+  </TabItem>
+  <TabItem value="macos" label="macOS">
+
+### Install on macOS (Docker Desktop)
+
+**Requirements (simplified)**:
+
+- macOS 12+ (for latest Docker Desktop).
+- 64-bit Intel or Apple Silicon (M1/M2/M3).
+
+**Steps**:
+
+1. Download **Docker Desktop for Mac** (Intel or Apple Silicon) from the official Docker website.
+2. Open the `.dmg` file and drag Docker to `Applications`.
+3. Start **Docker Desktop** from `Applications`.
+4. Allow any required permissions (networking, filesystem, etc.).
+5. Wait for Docker Desktop to report that Docker is running.
+
+**Verify installation (Terminal)**:
+
+```bash
+docker --version
+docker run hello-world
+```
+
+  </TabItem>
+</Tabs>
+
+---
+
+## Docker Command Reference
+
+### Working with Images
+
+```bash
+# List images
+docker images
+
+# Pull an image
+docker pull alpine:latest
+
+# Build an image from Dockerfile in current directory
+docker build -t my-app:1.0.0 .
+
+# Tag an existing image
+docker tag my-app:1.0.0 my-registry.com/my-app:1.0.0
+
+# Remove an image
+docker rmi my-app:1.0.0
+```
+
+### Working with Containers
+
+```bash
+# Run a container (interactive shell)
+docker run -it --name my-ubuntu ubuntu:22.04 bash
+
+# Run in detached mode with port mapping
+docker run -d --name web -p 8080:80 nginx:latest
+
+# Start/stop/restart containers
+docker start web
+docker stop web
+docker restart web
+
+# View logs
+docker logs web
+docker logs -f web         # follow logs
+
+# Execute a command in a running container
+docker exec -it web bash
+
+# Remove a container
+docker rm web
+docker rm -f web           # force remove (stops it if running)
+```
+
+### Inspecting Resources
+
+```bash
+# Show container details
+docker inspect web
+
+# Show resource usage
+docker stats
+
+# Monitor events
+docker events
+```
+
+### Volumes and Bind Mounts
+
+```bash
+# Create and list volumes
+docker volume create app-data
+docker volume ls
+
+# Use a named volume
+docker run -d --name db \
+  -v app-data:/var/lib/postgresql/data \
+  postgres:16
+
+# Use a bind mount (host folder -> container folder)
+docker run -d --name app \
+  -v $(pwd)/src:/usr/src/app \
+  node:20
+```
+
+### Networks
+
+```bash
+# Create a user-defined bridge network
+docker network create app-net
+
+# Run containers on that network
+docker run -d --name db --network app-net postgres:16
+docker run -d --name api --network app-net my-api:latest
+```
+
+---
+
+## Docker Compose Basics
+
+Docker Compose lets you define multi-container applications using a YAML file (`docker-compose.yml`).
+
+### Example `docker-compose.yml`
+
+```yaml
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: app_db
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  api:
+    build: ./api
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgres://app:secret@db:5432/app_db
+    depends_on:
+      - db
+
+volumes:
+  db-data:
+```
+
+### Common Docker Compose Commands
+
+```bash
+# Start services in the foreground
+docker compose up
+
+# Start services in the background
+docker compose up -d
+
+# Stop services
+docker compose down
+
+# View logs
+docker compose logs
+docker compose logs -f
+
+# Rebuild and restart
+docker compose up -d --build
+```
+
+---
+
+## Best Practices (Quick Checklist)
+
+- **Keep images small**: Use slim base images (e.g., `alpine`, `-slim`).
+- **Use `.dockerignore`** to exclude unnecessary files.
+- **Avoid running as root** inside containers when possible.
+- **Separate concerns**: one main process per container.
+- **Tag images** clearly (`1.0.0`, `staging`, `prod`).
+- **Clean up**: remove unused containers, images, and volumes regularly.
+
+```bash
+# Clean up stopped containers, unused networks, dangling images and build cache
+docker system prune
+```
+
+You now have a practical overview of Docker, from core concepts and installation to everyday commands for real-world development.
+
+---
+
+## Dockerfile Deep Dive
+
+### Anatomy of a Dockerfile
+
+- `FROM`: Base image (start point).
+- `WORKDIR`: Default working directory inside the container.
+- `COPY` / `ADD`: Copy files from host into image.
+- `RUN`: Execute commands at build time (install dependencies, configure OS).
+- `ENV`: Set environment variables.
+- `EXPOSE`: Document intended network port.
+- `USER`: Switch to a non-root user for runtime.
+- `CMD`: Default command executed when the container starts (overridable).
+- `ENTRYPOINT`: Preferred executable; often paired with `CMD` for arguments.
+
+### Minimal Examples
+
+**Node.js (production)**
+
+```dockerfile
+FROM node:20-alpine AS base
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --omit=dev
+COPY . .
+CMD ["node", "server.js"]
+```
+
+**Python (FastAPI)**
+
+```dockerfile
+FROM python:3.11-slim
+WORKDIR /app
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+**Golang (static binary)**
+
+```dockerfile
+FROM golang:1.22-alpine AS build
+WORKDIR /src
+COPY . .
+RUN go build -o app
+
+FROM alpine:3.20
+WORKDIR /app
+COPY --from=build /src/app .
+CMD ["./app"]
+```
+
+### Multi-Stage Build (common pattern)
+
+```dockerfile
+# Build stage
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+# Runtime stage
+FROM node:20-alpine AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=build /app/dist ./dist
+COPY package*.json ./
+RUN npm ci --omit=dev
+CMD ["node", "dist/index.js"]
+```
+
+Benefits:
+
+- Smaller runtime image (only what you need to run).
+- Build tooling stays in build stage.
+- Faster, more secure deployments.
+
+### Caching & Best Practices
+
+- **Order matters**: put the most stable instructions first (e.g., `FROM`, `WORKDIR`, `COPY package*.json`, `RUN npm ci`) to maximize layer cache hits.
+- **Use `.dockerignore`**: exclude `node_modules`, build artifacts, tests, `.git`, etc., to keep images smaller and builds faster.
+- **Pin versions**: base images (`node:20-alpine`), OS packages, and dependencies to ensure reproducibility.
+- **Non-root user**: add `USER app` where possible for better security.
+- **Healthchecks**: prefer Compose `healthcheck` or image-level `HEALTHCHECK` for long-running services.
+
+```dockerfile
+# Example with non-root and healthcheck
+FROM node:20-alpine
+WORKDIR /app
+RUN addgroup -S app && adduser -S app -G app
+COPY package*.json ./
+RUN npm ci --omit=dev
+COPY . .
+USER app
+EXPOSE 3000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget -qO- http://localhost:3000/health || exit 1
+CMD ["node", "server.js"]
+```
+
+### Debugging Images
+
+- Build with detail: `docker build --progress=plain --no-cache -t my-app .`
+- Inspect layers: `docker history my-app`
+- Shell into intermediate stage:
+
+```bash
+docker build --target build -t my-app-build .
+docker run -it --rm my-app-build sh
+```
+
+### Common Pitfalls Checklist
+
+- Avoid copying local `node_modules`/`vendor` unless intentional.
+- Keep secrets out of images; use env vars or secret stores.
+- Clean up package caches (`npm cache clean --force`, `pip cache purge`) when size matters.
+- Match CPU/OS architecture to target deployment (e.g., `--platform linux/amd64` for x86 targets).
