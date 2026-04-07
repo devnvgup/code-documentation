@@ -1,0 +1,127 @@
+# Valid Anagram
+
+## Đề bài
+Cho hai chuỗi `s` và `t`, trả về `true` nếu `t` là anagram của `s`, và `false` nếu không. Một anagram là một từ hoặc cụm từ được hình thành bằng cách sắp xếp lại các chữ cái của một từ hoặc cụm từ khác, thường sử dụng tất cả các chữ cái gốc chính xác một lần.
+
+**Ví dụ:**
+- Input: `s = "anagram"`, `t = "nagaram"`  
+  Output: `true`
+- Input: `s = "rat"`, `t = "car"`  
+  Output: `false`
+
+**Ràng buộc:**
+- `1 <= s.length, t.length <= 5 * 10^4`
+- `s` và `t` chỉ chứa chữ cái tiếng Anh viết thường.
+
+## Giải pháp
+
+Dưới đây là một số cách giải quyết bài toán Valid Anagram bằng Java.
+
+### Solution 1: Sử dụng Sorting
+
+Sắp xếp cả hai chuỗi và so sánh chúng. Nếu chúng giống nhau sau khi sắp xếp, thì là anagram.
+
+**Code (Java):**
+```java
+import java.util.Arrays;
+
+class Solution {
+    public boolean isAnagram(String s, String t) {
+        if (s.length() != t.length()) {
+            return false;
+        }
+        char[] sChars = s.toCharArray();
+        char[] tChars = t.toCharArray();
+        Arrays.sort(sChars);
+        Arrays.sort(tChars);
+        return Arrays.equals(sChars, tChars);
+    }
+}
+```
+
+**Độ phức tạp:**
+- Thời gian: O(n log n), do sắp xếp.
+- Không gian: O(n), do tạo mảng char.
+
+### Solution 2: Sử dụng HashMap
+
+Sử dụng HashMap để đếm tần suất xuất hiện của mỗi ký tự trong `s`, sau đó giảm đếm cho `t`. Nếu tất cả đều về 0, là anagram.
+
+**Code (Java):**
+```java
+import java.util.HashMap;
+import java.util.Map;
+
+class Solution {
+    public boolean isAnagram(String s, String t) {
+        if (s.length() != t.length()) {
+            return false;
+        }
+        Map<Character, Integer> count = new HashMap<>();
+        for (char c : s.toCharArray()) {
+            count.put(c, count.getOrDefault(c, 0) + 1);
+        }
+        for (char c : t.toCharArray()) {
+            count.put(c, count.getOrDefault(c, 0) - 1);
+            if (count.get(c) < 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+}
+```
+
+**Độ phức tạp:**
+- Thời gian: O(n), duyệt qua cả hai chuỗi.
+- Không gian: O(1), vì chỉ có 26 chữ cái, HashMap size cố định.
+
+### Solution 3: Sử dụng Array (Hash Table)
+
+Vì chỉ có chữ cái viết thường, sử dụng mảng int[26] để đếm tần suất.
+
+**Code (Java):**
+```java
+class Solution {
+    public boolean isAnagram(String s, String t) {
+        if (s.length() != t.length()) {
+            return false;
+        }
+        int[] count = new int[26];
+        for (char c : s.toCharArray()) {
+            count[c - 'a']++;
+        }
+        for (char c : t.toCharArray()) {
+            count[c - 'a']--;
+            if (count[c - 'a'] < 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+}
+```
+
+**Độ phức tạp:**
+- Thời gian: O(n), duyệt qua cả hai chuỗi.
+- Không gian: O(1), mảng cố định 26 phần tử.
+
+## Cách thuật toán hoạt động
+### Solution 1 (Sorting):
+1. Kiểm tra độ dài hai chuỗi có bằng nhau không, nếu không trả về `false`.
+2. Chuyển hai chuỗi thành mảng char và sắp xếp.
+3. So sánh hai mảng đã sắp xếp, nếu giống nhau trả về `true`, ngược lại `false`.
+
+### Solution 2 (HashMap):
+1. Kiểm tra độ dài.
+2. Đếm tần suất ký tự trong `s` bằng HashMap.
+3. Duyệt `t`, giảm đếm, nếu đếm âm trả về `false`.
+4. Nếu hết, trả về `true`.
+
+### Solution 3 (Array):
+1. Kiểm tra độ dài.
+2. Dùng mảng 26 phần tử đếm cho `s`.
+3. Duyệt `t`, giảm đếm, nếu âm trả về `false`.
+4. Trả về `true`.
+
+Giải pháp này tham khảo từ NeetCode.

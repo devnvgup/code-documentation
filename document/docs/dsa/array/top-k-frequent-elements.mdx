@@ -1,0 +1,118 @@
+# Top K Frequent Elements
+
+## Đề bài
+Cho một mảng số nguyên `nums` và một số nguyên `k`, trả về `k` phần tử xuất hiện nhiều nhất. Bạn có thể trả về kết quả theo bất kỳ thứ tự nào.
+
+**Ví dụ:**
+- Input: `nums = [1,1,1,2,2,3]`, `k = 2`  
+  Output: `[1,2]`
+- Input: `nums = [1]`, `k = 1`  
+  Output: `[1]`
+
+**Ràng buộc:**
+- `1 <= nums.length <= 10^5`
+- `k` hợp lệ, `1 <= k <= number of unique elements`
+
+## Giải pháp
+
+### Solution 1: HashMap + Sorting
+
+Đếm tần suất bằng HashMap, sort theo frequency.
+
+**Code (Java):**
+```java
+import java.util.*;
+
+class Solution {
+    public int[] topKFrequent(int[] nums, int k) {
+        Map<Integer, Integer> count = new HashMap<>();
+        for (int num : nums) {
+            count.put(num, count.getOrDefault(num, 0) + 1);
+        }
+        List<Integer> list = new ArrayList<>(count.keySet());
+        list.sort((a, b) -> count.get(b) - count.get(a));
+        int[] res = new int[k];
+        for (int i = 0; i < k; i++) {
+            res[i] = list.get(i);
+        }
+        return res;
+    }
+}
+```
+
+**Độ phức tạp:** O(n log n) time, O(n) space.
+
+### Solution 2: Bucket Sort
+
+Dùng list of lists cho frequencies.
+
+**Code (Java):**
+```java
+import java.util.*;
+
+class Solution {
+    public int[] topKFrequent(int[] nums, int k) {
+        Map<Integer, Integer> count = new HashMap<>();
+        for (int num : nums) {
+            count.put(num, count.getOrDefault(num, 0) + 1);
+        }
+        List<Integer>[] bucket = new List[nums.length + 1];
+        for (int i = 0; i <= nums.length; i++) {
+            bucket[i] = new ArrayList<>();
+        }
+        for (int key : count.keySet()) {
+            bucket[count.get(key)].add(key);
+        }
+        int[] res = new int[k];
+        int idx = 0;
+        for (int i = nums.length; i >= 0 && idx < k; i--) {
+            for (int num : bucket[i]) {
+                res[idx++] = num;
+                if (idx == k) break;
+            }
+        }
+        return res;
+    }
+}
+```
+
+**Độ phức tạp:** O(n) time, O(n) space.
+
+### Solution 3: Priority Queue (Heap)
+
+Dùng min-heap để giữ top k.
+
+**Code (Java):**
+```java
+import java.util.*;
+
+class Solution {
+    public int[] topKFrequent(int[] nums, int k) {
+        Map<Integer, Integer> count = new HashMap<>();
+        for (int num : nums) {
+            count.put(num, count.getOrDefault(num, 0) + 1);
+        }
+        PriorityQueue<Integer> pq = new PriorityQueue<>((a, b) -> count.get(a) - count.get(b));
+        for (int key : count.keySet()) {
+            pq.add(key);
+            if (pq.size() > k) {
+                pq.poll();
+            }
+        }
+        int[] res = new int[k];
+        for (int i = k - 1; i >= 0; i--) {
+            res[i] = pq.poll();
+        }
+        return res;
+    }
+}
+```
+
+**Độ phức tạp:** O(n log k) time, O(n) space.
+
+## Cách thuật toán hoạt động
+- **HashMap + Sort:** Đếm và sort.
+- **Bucket Sort:** Group theo frequency.
+- **Heap:** Duy trì top k bằng heap.
+
+Tham khảo NeetCode.

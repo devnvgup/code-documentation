@@ -1,0 +1,353 @@
+---
+title: Hướng dẫn Apache Kafka cơ bản
+sidebar_label: Kafka Guide
+---
+
+## 1. Apache Kafka là gì?
+
+Apache Kafka là một **distributed event streaming platform**, dùng để:
+
+- Truyền dữ liệu **real-time**
+- Giao tiếp **bất đồng bộ (async)**
+- Xử lý **event-driven architecture**
+- Kết nối các **microservice**
+
+Kafka có thể hiểu đơn giản là:
+
+> “Hệ thống gửi – nhận message siêu nhanh, chịu tải lớn, không mất dữ liệu”
+
+## 2. Kafka giải quyết vấn đề gì?
+
+### 2.1. Mô hình cũ: REST sync
+
+Trong mô hình REST truyền thống:
+
+- Service A gọi trực tiếp Service B
+- **B chết → A chết theo**
+- Hệ thống **chậm, khó scale**
+- **Retry** khó, dễ gây timeout, nghẽn
+
+### 2.2. Mô hình với Kafka (Event-driven)
+
+Với Kafka:
+
+- A **bắn event** vào Kafka
+- Các service B, C, D **tự subscribe / consume** event đó
+- Các service **không phụ thuộc trực tiếp** vào nhau
+- **Retry, scale ngang** dễ dàng
+
+Kết quả: hệ thống đạt được **loose coupling** giữa các service.
+
+## 3. Kiến trúc tổng thể Kafka
+
+Mô hình đơn giản:
+
+- `Producer` → `Kafka Broker` → `Consumer`
+
+Mô hình thực tế chi tiết hơn:
+
+- `Producer`
+  - gửi message vào
+- `Topic → Partition → Broker (Cluster)`
+- `Consumer Group → Consumer`
+
+Tổng quan:
+
+- Nhiều `producer` có thể ghi vào cùng một `topic`
+- Mỗi `topic` chia thành **nhiều partition**
+- Consumer được tổ chức thành **consumer group** để scale ngang
+
+## 4. Các khái niệm cốt lõi trong Kafka
+
+### 4.1. Broker
+
+- `Broker` = 1 server Kafka
+- Kafka thường chạy dưới dạng **cluster** (nhiều broker)
+- Mỗi broker có một **ID** (0, 1, 2, …)
+- Broker chịu trách nhiệm:
+  - Lưu dữ liệu (message)
+  - Nhận message từ producer
+  - Gửi message cho consumer
+
+### 4.2. Topic
+
+- `Topic` = **tên luồng dữ liệu** (stream name)
+- Ví dụ topic:
+  - `order-created`
+  - `payment-success`
+  - `user-registered`
+
+Lưu ý:
+
+- Kafka **không** phải là hàng đợi FIFO truyền thống
+- Kafka **lưu message theo topic**, bên trong topic là nhiều partition
+
+### 4.3. Partition (rất quan trọng)
+
+- Mỗi topic được chia thành **nhiều partition**
+- `Partition` = **log append-only** (chỉ ghi thêm, không sửa, không xóa tại chỗ)
+
+Ví dụ topic `order-created`:
+
+```text
+order-created
+  ├─ partition-0
+  ├─ partition-1
+  └─ partition-2
+```
+
+Trong mỗi partition là danh sách message:
+
+```text
+partition-0:
+  ├─ message-1
+  ├─ message-2
+  └─ message-3
+
+partition-1:
+  ├─ message-4
+  ├─ message-5
+  └─ message-6
+```
+
+Kafka **chỉ đảm bảo thứ tự (ordering) trong 1 partition**.
+
+### 4.4. Offset
+
+- `Offset` = vị trí của message trong một partition
+- Mỗi message có offset tăng dần: `0, 1, 2, 3, ...`
+- Consumer đọc message dựa vào **offset** này
+
+### 4.5. Producer
+
+- `Producer` = thành phần **gửi message** vào Kafka
+- Chiến lược gửi:
+  - Gửi **round-robin** qua các partition
+  - Gửi **theo key**
+
+Nếu gửi có `key`, Kafka đảm bảo:
+
+- **Cùng key → cùng partition → giữ được thứ tự** message với cùng key.
+
+### 4.6. Consumer
+
+- `Consumer` = thành phần **đọc message**
+- Consumer **pull** data từ Kafka (Kafka không tự push xuống)
+
+### 4.7. Consumer Group (cực kỳ quan trọng)
+
+- Nhiều consumer có thể thuộc chung một `group.id`
+- Kafka đảm bảo:
+  - **1 partition chỉ được 1 consumer trong cùng group đọc**
+
+Ví dụ:
+
+- Topic có **3 partition**
+- Consumer group có **3 consumer**
+- → Mỗi consumer đọc **1 partition**
+
+Khi muốn **scale ngang**, ta tăng số lượng consumer trong group (tối đa bằng số partition).
+
+## 5. So sánh Kafka và RabbitMQ
+
+| Kafka           | RabbitMQ            |
+| --------------- | ------------------- |
+| Event streaming | Message queue       |
+| Lưu message lâu | Xóa sau khi consume |
+| High throughput | Low latency         |
+| Replay được     | Không replay        |
+| Log-based       | Queue-based         |
+
+### 5.1. Kafka thường dùng cho
+
+- Event
+- Analytics
+- Microservice
+- Logging
+- Payment, Order, Notification
+
+### 5.2. RabbitMQ thường dùng cho
+
+- Task queue
+- Các job ngắn, xử lý nhanh
+- Các luồng cần độ trễ cực thấp, ít cần lưu lâu
+
+## 6. Delivery semantics (rất hay bị hỏi)
+
+### 6.1. At most once
+
+- Gửi **1 lần**
+- Có thể **mất message**
+- Không retry
+
+### 6.2. At least once (phổ biến nhất)
+
+- **Không mất message**
+- Có thể bị **xử lý trùng**
+- Cần xử lý **idempotent** ở phía consumer
+
+### 6.3. Exactly once (khó, nâng cao)
+
+- Không mất message
+- Không xử lý trùng
+- Cần kết hợp:
+  - **Idempotent producer**
+  - **Transaction**
+  - **Kafka Streams** (hoặc cơ chế xử lý stream có hỗ trợ exactly-once)
+
+## 7. Commit offset là gì?
+
+### 7.1. Auto commit
+
+- Kafka **tự động commit offset**
+- Dễ dùng
+- Có thể **mất message** trong trường hợp:
+  - Offset đã commit
+  - Consumer crash trước khi xử lý xong logic nội bộ
+
+### 7.2. Manual commit (khuyến nghị)
+
+- Ứng dụng **xử lý xong → commit offset**
+- **An toàn** hơn, hạn chế mất dữ liệu
+- Đổi lại:
+  - Code **phức tạp hơn**
+  - Cần tự quản lý thời điểm commit
+
+## 8. Kafka lưu dữ liệu như thế nào?
+
+- Kafka ghi dữ liệu ra **disk**
+- Mô hình **append-only**
+- Tận dụng **sequential I/O** → rất nhanh
+- Không cần nhiều RAM
+
+Về **retention**:
+
+- Dữ liệu **không xóa ngay** sau khi consume
+- Xóa theo chính sách:
+  - Theo **time** (ví dụ: 7 ngày)
+  - Theo **size** (ví dụ: 100GB)
+
+Nhờ đó:
+
+- Consumer mới join sau vẫn có thể **đọc được dữ liệu cũ** (nếu còn trong retention).
+
+## 9. Replication & Fault tolerance
+
+### 9.1. Replication factor
+
+Ví dụ cấu hình:
+
+```text
+replication.factor = 3
+```
+
+Khi đó, mỗi partition có:
+
+- **1 leader**
+- **2 follower**
+
+Nếu **leader chết** → một follower sẽ được bầu lên làm leader mới → đảm bảo **high availability**.
+
+## 10. Kafka đảm bảo thứ tự như thế nào?
+
+- Kafka chỉ đảm bảo **thứ tự trong phạm vi 1 partition**
+- Nếu muốn **global order cho toàn topic**:
+  - Cấu hình topic chỉ có **1 partition**
+  - Nhưng điều này làm **khó scale** (vì không thể phân tán load)
+
+Trong thực tế, ta thường:
+
+- Đảm bảo order theo `orderId`
+- Đảm bảo order theo `paymentId`
+
+→ Nghĩa là **thứ tự được đảm bảo theo key nghiệp vụ**, không phải global.
+
+## 11. Idempotency (rất quan trọng)
+
+Do Kafka thường được dùng với cơ chế **at-least-once**, nên message **có thể bị xử lý trùng**.
+
+Cách xử lý phổ biến:
+
+- Message có gắn `eventId` (hoặc `transactionId` duy nhất)
+- Consumer khi xử lý:
+  - Kiểm tra trong DB hoặc cache:
+    - Nếu `eventId` đã từng xử lý → **bỏ qua (ignore)**
+    - Nếu chưa → xử lý bình thường, sau đó lưu lại `eventId`
+
+## 12. Kafka Transaction (nâng cao)
+
+- Producer có thể gửi **nhiều message** và **commit như một transaction**
+- Dùng cho:
+  - **Exactly-once**
+  - Các luồng xử lý với **Kafka Streams**
+
+## 13. Kafka Streams (tổng quan lý thuyết)
+
+`Kafka Streams` là thư viện để:
+
+- Xử lý **stream ngay trong Kafka ecosystem**
+- Không cần viết consumer riêng + hệ xử lý phức tạp
+
+Phù hợp cho:
+
+- **Aggregation** (tổng hợp)
+- **Join** giữa nhiều stream
+- **Windowing** (tính toán trên khoảng thời gian)
+
+## 14. Khi nào nên dùng Kafka?
+
+### 14.1. Trường hợp nên dùng
+
+- Hệ thống **microservice**
+- Kiến trúc **event-driven**
+- Hệ thống **logging**, tracking
+- **Analytics**, clickstream
+- Các domain như **Payment, Order, Notification**
+
+### 14.2. Trường hợp không nên dùng
+
+- Các luồng **request–response đơn giản**
+- Các thao tác **CRUD nhỏ, ít volume**
+- Task cần **phản hồi ngay lập tức**, độ trễ cực thấp
+
+## 15. Sơ đồ tổng quan luồng dữ liệu
+
+```text
+                         ┌───────────────┐
+                         │   PRODUCER    │
+                         │ (OrderSvc,    │
+                         │  PaymentSvc)  │
+                         └───────┬───────┘
+                                 │  send message
+                                 ▼
+         ══════════════════════════════════════════════════════════════
+                           KAFKA CLUSTER
+        ══════════════════════════════════════════════════════════════
+
+        ┌───────────────┐    ┌───────────────┐    ┌───────────────┐
+        │   BROKER 1    │    │   BROKER 2    │    │   BROKER 3    │
+        │               │    │               │    │               │
+        │  Topic: Order │    │  Topic: Order │    │  Topic: Order │
+        │  ┌─────────┐  │    │  ┌─────────┐  │    │  ┌─────────┐  │
+        │  │Partition│  │    │  │Partition│  │    │  │Partition│  │
+        │  │   0     │◄ ┼────┼──┤    1    │◄ ┼────┼──┤    2    │  │
+        │  └─────────┘  │    │  └─────────┘  │    │  └─────────┘  │
+        └───────────────┘    └───────────────┘    └───────────────┘
+
+        ══════════════════════════════════════════════════════════════
+                                 CONSUMERS
+        ══════════════════════════════════════════════════════════════
+
+    ┌──────────────────── CONSUMER GROUP: order-group ────────────────────┐
+    │                                                                     │
+    │   ┌──────────────┐     ┌──────────────┐     ┌──────────────┐        │
+    │   │  Consumer A  │     │  Consumer B  │     │  Consumer C  │        │
+    │   │  read P0     │     │  read P1     │     │  read P2     │        │
+    │   └──────▲───────┘     └──────▲───────┘     └──────▲───────┘        │
+    │          │                     │                     │              │
+    │   (1 partition chỉ có 1 consumer trong group đọc)    │              │
+    └──────────────────────────────────────────────────────────────────────
+
+```
+
+Tài liệu này ở mức **tổng quan**, đủ để nắm vững khái niệm và tự tin trả lời các câu hỏi phỏng vấn cơ bản về Kafka.

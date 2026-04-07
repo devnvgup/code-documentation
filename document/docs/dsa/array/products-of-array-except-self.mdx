@@ -1,0 +1,118 @@
+# Products of Array Except Self
+
+## Đề bài
+Cho một mảng số nguyên `nums`, trả về một mảng `answer` sao cho `answer[i]` bằng tích của tất cả các phần tử của `nums` ngoại trừ `nums[i]`.
+
+**Ví dụ:**
+- Input: `nums = [1,2,3,4]`  
+  Output: `[24,12,8,6]`
+- Input: `nums = [-1,1,0,-3,3]`  
+  Output: `[0,0,9,0,0]`
+
+**Ràng buộc:**
+- `2 <= nums.length <= 10^5`
+- `-30 <= nums[i] <= 30`
+- Tích của bất kỳ prefix hoặc suffix nào của `nums` đều đảm bảo vừa trong 32-bit integer.
+
+## Giải pháp
+
+### Solution 1: Prefix and Suffix Products
+
+Tính tích prefix và suffix.
+
+**Code (Java):**
+```java
+class Solution {
+    public int[] productExceptSelf(int[] nums) {
+        int n = nums.length;
+        int[] res = new int[n];
+        int[] prefix = new int[n];
+        int[] suffix = new int[n];
+        prefix[0] = 1;
+        for (int i = 1; i < n; i++) {
+            prefix[i] = prefix[i - 1] * nums[i - 1];
+        }
+        suffix[n - 1] = 1;
+        for (int i = n - 2; i >= 0; i--) {
+            suffix[i] = suffix[i + 1] * nums[i + 1];
+        }
+        for (int i = 0; i < n; i++) {
+            res[i] = prefix[i] * suffix[i];
+        }
+        return res;
+    }
+}
+```
+
+**Độ phức tạp:** O(n) time, O(n) space.
+
+### Solution 2: Optimized Space
+
+Tính suffix trong res array.
+
+**Code (Java):**
+```java
+class Solution {
+    public int[] productExceptSelf(int[] nums) {
+        int n = nums.length;
+        int[] res = new int[n];
+        res[0] = 1;
+        for (int i = 1; i < n; i++) {
+            res[i] = res[i - 1] * nums[i - 1];
+        }
+        int suffix = 1;
+        for (int i = n - 1; i >= 0; i--) {
+            res[i] *= suffix;
+            suffix *= nums[i];
+        }
+        return res;
+    }
+}
+```
+
+**Độ phức tạp:** O(n) time, O(1) space (không tính output).
+
+### Solution 3: Division (nếu không có zero)
+
+Tính tổng tích, chia cho mỗi phần tử, nhưng handle zero.
+
+**Code (Java):**
+```java
+class Solution {
+    public int[] productExceptSelf(int[] nums) {
+        int n = nums.length;
+        int total = 1;
+        int zeroCount = 0;
+        int zeroIndex = -1;
+        for (int i = 0; i < n; i++) {
+            if (nums[i] == 0) {
+                zeroCount++;
+                zeroIndex = i;
+            } else {
+                total *= nums[i];
+            }
+        }
+        int[] res = new int[n];
+        if (zeroCount > 1) {
+            return res; // all zero
+        }
+        if (zeroCount == 1) {
+            res[zeroIndex] = total;
+            return res;
+        }
+        for (int i = 0; i < n; i++) {
+            res[i] = total / nums[i];
+        }
+        return res;
+    }
+}
+```
+
+**Độ phức tạp:** O(n) time, O(1) space.
+
+## Cách thuật toán hoạt động
+- **Prefix/Suffix:** Tính tích trái và phải.
+- **Optimized:** Tái sử dụng array để tiết kiệm space.
+- **Division:** Tính tổng tích, chia, handle zero.
+
+Tham khảo NeetCode.

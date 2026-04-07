@@ -1,0 +1,113 @@
+# Contains Duplicate
+
+## Đề bài
+Cho một mảng số nguyên `nums`, trả về `true` nếu có bất kỳ giá trị nào xuất hiện ít nhất hai lần trong mảng, và trả về `false` nếu mọi phần tử đều khác biệt.
+
+**Ví dụ:**
+- Input: `nums = [1,2,3,1]`  
+  Output: `true`
+- Input: `nums = [1,2,3,4]`  
+  Output: `false`
+- Input: `nums = [1,1,1,3,3,4,3,2,4,2]`  
+  Output: `true`
+
+**Ràng buộc:**
+- `1 <= nums.length <= 10^5`
+- `-10^9 <= nums[i] <= 10^9`
+
+## Giải pháp
+
+Dưới đây là một số cách giải quyết bài toán Contains Duplicate bằng Java.
+
+### Solution 1: Sử dụng HashSet (Tối ưu nhất)
+
+Chúng ta sử dụng một HashSet để theo dõi các phần tử đã thấy. Khi duyệt qua mảng, nếu một phần tử đã có trong set, nghĩa là có duplicate.
+
+**Code (Java):**
+```java
+import java.util.HashSet;
+import java.util.Set;
+
+class Solution {
+    public boolean containsDuplicate(int[] nums) {
+        Set<Integer> seen = new HashSet<>();
+        for (int num : nums) {
+            if (seen.contains(num)) {
+                return true;
+            }
+            seen.add(num);
+        }
+        return false;
+    }
+}
+```
+
+**Độ phức tạp:**
+- Thời gian: O(n), vì duyệt qua mảng một lần.
+- Không gian: O(n), trong trường hợp xấu nhất khi không có duplicate.
+
+### Solution 2: Sử dụng Sorting
+
+Sắp xếp mảng, sau đó kiểm tra các phần tử liền kề có trùng nhau không.
+
+**Code (Java):**
+```java
+import java.util.Arrays;
+
+class Solution {
+    public boolean containsDuplicate(int[] nums) {
+        Arrays.sort(nums);
+        for (int i = 0; i < nums.length - 1; i++) {
+            if (nums[i] == nums[i + 1]) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+```
+
+**Độ phức tạp:**
+- Thời gian: O(n log n), do sắp xếp.
+- Không gian: O(1), nếu sắp xếp in-place.
+
+### Solution 3: Sử dụng Stream (Java 8+)
+
+Sử dụng Stream để kiểm tra xem số lượng phần tử distinct có bằng với độ dài mảng không.
+
+**Code (Java):**
+```java
+import java.util.Arrays;
+
+class Solution {
+    public boolean containsDuplicate(int[] nums) {
+        return Arrays.stream(nums).distinct().count() != nums.length;
+    }
+}
+```
+
+**Độ phức tạp:**
+- Thời gian: O(n), nhưng có thể chậm hơn do overhead của Stream.
+- Không gian: O(n), do tạo stream distinct.
+
+## Cách thuật toán hoạt động
+### Solution 1 (HashSet):
+1. Khởi tạo một HashSet rỗng `seen` để lưu trữ các phần tử đã gặp.
+2. Duyệt qua từng phần tử `num` trong mảng `nums`:
+   - Nếu `num` đã có trong `seen`, trả về `true` vì có duplicate.
+   - Nếu chưa, thêm `num` vào `seen`.
+3. Nếu duyệt hết mà không tìm thấy duplicate, trả về `false`.
+
+### Solution 2 (Sorting):
+1. Sắp xếp mảng `nums` theo thứ tự tăng dần.
+2. Duyệt qua mảng từ đầu đến cuối - 1:
+   - Nếu `nums[i] == nums[i+1]`, trả về `true`.
+3. Nếu không tìm thấy, trả về `false`.
+
+### Solution 3 (Stream):
+1. Tạo một stream từ mảng `nums`.
+2. Sử dụng `distinct()` để loại bỏ các phần tử trùng lặp.
+3. Đếm số lượng phần tử distinct.
+4. Nếu số lượng distinct khác với độ dài mảng, có duplicate, trả về `true`; ngược lại `false`.
+
+Giải pháp này tham khảo từ NeetCode, nơi cung cấp các giải pháp tối ưu cho các bài LeetCode.

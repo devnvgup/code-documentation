@@ -1,0 +1,125 @@
+# Encode and Decode Strings
+
+## Đề bài
+Thiết kế một thuật toán để encode một list of strings thành một string. Thuật toán encoded string phải có thể decode ngược lại thành list gốc.
+
+**Ví dụ:**
+- Input: `["lint","code","love","you"]`  
+  Output: `"4#lint4#code4#love3#you"`
+- Decode: `["lint","code","love","you"]`
+
+**Ràng buộc:**
+- `1 <= strs.length <= 100`
+- `1 <= strs[i].length <= 100`
+- `strs[i]` chứa bất kỳ ký tự nào.
+
+## Giải pháp
+
+### Solution 1: Length Prefix
+
+Thêm độ dài trước mỗi string, ngăn cách bằng '#'.
+
+**Encode Code (Java):**
+```java
+public class Codec {
+    public String encode(List<String> strs) {
+        StringBuilder sb = new StringBuilder();
+        for (String str : strs) {
+            sb.append(str.length()).append("#").append(str);
+        }
+        return sb.toString();
+    }
+
+    public List<String> decode(String s) {
+        List<String> res = new ArrayList<>();
+        int i = 0;
+        while (i < s.length()) {
+            int j = i;
+            while (s.charAt(j) != '#') {
+                j++;
+            }
+            int len = Integer.parseInt(s.substring(i, j));
+            i = j + 1;
+            res.add(s.substring(i, i + len));
+            i += len;
+        }
+        return res;
+    }
+}
+```
+
+**Độ phức tạp:** O(n) time, O(n) space.
+
+### Solution 2: Escape Character
+
+Dùng ký tự đặc biệt để escape, nhưng phức tạp hơn.
+
+**Encode Code (Java):**
+```java
+public class Codec {
+    public String encode(List<String> strs) {
+        StringBuilder sb = new StringBuilder();
+        for (String str : strs) {
+            sb.append(str.replace("\\", "\\\\").replace(",", "\\,")).append(",");
+        }
+        return sb.toString();
+    }
+
+    public List<String> decode(String s) {
+        List<String> res = new ArrayList<>();
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < s.length(); i++) {
+            if (s.charAt(i) == '\\') {
+                sb.append(s.charAt(++i));
+            } else if (s.charAt(i) == ',') {
+                res.add(sb.toString());
+                sb.setLength(0);
+            } else {
+                sb.append(s.charAt(i));
+            }
+        }
+        return res;
+    }
+}
+```
+
+**Độ phức tạp:** O(n) time, O(n) space.
+
+### Solution 3: JSON (Simple)
+
+Dùng JSON để serialize/deserialize.
+
+**Code (Java):**
+```java
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+public class Codec {
+    private static final ObjectMapper mapper = new ObjectMapper();
+
+    public String encode(List<String> strs) {
+        try {
+            return mapper.writeValueAsString(strs);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public List<String> decode(String s) {
+        try {
+            return mapper.readValue(s, new TypeReference<List<String>>() {});
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+```
+
+**Độ phức tạp:** O(n) time, O(n) space. (Cần thư viện Jackson)
+
+## Cách thuật toán hoạt động
+- **Length Prefix:** Thêm len# trước mỗi string.
+- **Escape:** Escape ký tự đặc biệt.
+- **JSON:** Sử dụng thư viện để serialize.
+
+Tham khảo NeetCode.

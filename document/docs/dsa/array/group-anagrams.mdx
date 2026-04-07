@@ -1,0 +1,98 @@
+# Group Anagrams
+
+## Đề bài
+Cho một mảng các chuỗi `strs`, nhóm các anagram lại với nhau. Bạn có thể trả về kết quả theo bất kỳ thứ tự nào.
+
+**Ví dụ:**
+- Input: `strs = ["eat","tea","tan","ate","nat","bat"]`  
+  Output: `[["bat"],["nat","tan"],["ate","eat","tea"]]`
+
+**Ràng buộc:**
+- `1 <= strs.length <= 10^4`
+- `0 <= strs[i].length <= 100`
+- `strs[i]` chỉ chứa chữ cái tiếng Anh viết thường.
+
+## Giải pháp
+
+### Solution 1: Sorting
+
+Sắp xếp mỗi chuỗi và dùng làm key trong HashMap.
+
+**Code (Java):**
+```java
+import java.util.*;
+
+class Solution {
+    public List<List<String>> groupAnagrams(String[] strs) {
+        Map<String, List<String>> map = new HashMap<>();
+        for (String str : strs) {
+            char[] chars = str.toCharArray();
+            Arrays.sort(chars);
+            String key = new String(chars);
+            map.computeIfAbsent(key, k -> new ArrayList<>()).add(str);
+        }
+        return new ArrayList<>(map.values());
+    }
+}
+```
+
+**Độ phức tạp:** O(n * k log k) time, O(n * k) space.
+
+### Solution 2: Frequency Count
+
+Dùng mảng đếm tần suất làm key.
+
+**Code (Java):**
+```java
+import java.util.*;
+
+class Solution {
+    public List<List<String>> groupAnagrams(String[] strs) {
+        Map<String, List<String>> map = new HashMap<>();
+        for (String str : strs) {
+            int[] count = new int[26];
+            for (char c : str.toCharArray()) {
+                count[c - 'a']++;
+            }
+            String key = Arrays.toString(count);
+            map.computeIfAbsent(key, k -> new ArrayList<>()).add(str);
+        }
+        return new ArrayList<>(map.values());
+    }
+}
+```
+
+**Độ phức tạp:** O(n * k) time, O(n * k) space.
+
+### Solution 3: Prime Product
+
+Gán số nguyên tố cho mỗi chữ cái, tích làm key.
+
+**Code (Java):**
+```java
+import java.util.*;
+
+class Solution {
+    public List<List<String>> groupAnagrams(String[] strs) {
+        int[] primes = {2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97,101};
+        Map<Long, List<String>> map = new HashMap<>();
+        for (String str : strs) {
+            long key = 1;
+            for (char c : str.toCharArray()) {
+                key *= primes[c - 'a'];
+            }
+            map.computeIfAbsent(key, k -> new ArrayList<>()).add(str);
+        }
+        return new ArrayList<>(map.values());
+    }
+}
+```
+
+**Độ phức tạp:** O(n * k) time, O(n) space.
+
+## Cách thuật toán hoạt động
+- **Sorting:** Sắp xếp chuỗi làm key.
+- **Frequency:** Đếm tần suất làm key.
+- **Prime:** Tích số nguyên tố làm key duy nhất.
+
+Tham khảo NeetCode.
